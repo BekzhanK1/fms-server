@@ -6,24 +6,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 
 from users.managers import UserManager
 
-
-class Role(models.TextChoices):
-    Farmer = "Farmer", _("Farmer")
-    Buyer = "Buyer", _("Buyer")
-    Admin = "Admin", _("Admin")
-
-
-class PaymentMethod(models.TextChoices):
-    Cash = "Cash", _("Cash")
-    Card = "Card", _("Card")
-    QR = "QR", _("QR")
-
-
-class SocialType(models.TextChoices):
-    Facebook = "Facebook", _("Facebook")
-    Twitter = "Twitter", _("Twitter")
-    Instagram = "Instagram", _("Instagram")
-    LinkedIn = "LinkedIn", _("LinkedIn")
+from .choices import Role, PaymentMethod, SocialType
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -45,6 +28,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     @property
     def is_buyer(self):
         return self.role == Role.Buyer
+
+    @property
+    def is_admin(self):
+        return self.role == Role.Admin
 
     objects = UserManager()
 
