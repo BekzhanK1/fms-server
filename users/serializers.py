@@ -36,6 +36,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     info = serializers.SerializerMethodField()
+    socials = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -48,6 +49,7 @@ class UserSerializer(serializers.ModelSerializer):
             "avatar",
             "role",
             "info",
+            "socials",
         ]
         read_only_fields = [
             "id",
@@ -82,6 +84,16 @@ class UserSerializer(serializers.ModelSerializer):
                     "payment_method": buyer_info.payment_method,
                 }
         return None
+
+    def get_socials(self, obj):
+        socials = Social.objects.filter(farmer=obj)
+        return SocialSerializer(socials, many=True).data
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        if instance.role == "Buyer":
+            representation.pop("socials", None)
+        return representation
 
 
 class UpdateUserSerializer(serializers.ModelSerializer):
