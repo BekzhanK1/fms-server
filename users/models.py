@@ -38,6 +38,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def is_farmer(self):
+        return self.role == Role.Farmer
+
+    @property
+    def is_buyer(self):
+        return self.role == Role.Buyer
+
     objects = UserManager()
 
     USERNAME_FIELD = "email"

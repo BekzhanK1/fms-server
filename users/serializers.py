@@ -2,7 +2,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 
-from users.models import User
+from users.models import Social, User
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -102,3 +102,15 @@ class UpdateUserSerializer(serializers.ModelSerializer):
         instance.avatar = validated_data.get("avatar", instance.avatar)
         instance.save()
         return instance
+
+
+class SocialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Social
+        fields = ["id", "platform", "url"]
+        read_only_fields = ["id"]
+
+    def validate_url(self, value):
+        if not value.startswith("http"):
+            raise serializers.ValidationError("The URL must start with http or https.")
+        return value
