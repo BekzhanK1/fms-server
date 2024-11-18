@@ -19,14 +19,28 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.Buyer)
-    profile_picture = models.URLField(max_length=500, null=True, blank=True)
+    avatar = models.ImageField(
+        upload_to='avatars/', null=True, blank=True 
+    )
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
-    objects = UserManager()
-
+    objects = UserManager()    
+    
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = ["first_name", "last_name"]
+    
+    def switch_role(self):
+        if self.role == Role.Admin:
+            raise ValueError("Admin role cannot be switched")
+        elif self.role == Role.Buyer:
+            self.role = Role.Farmer
+            self.save()
+        elif self.role == Role.Farmer:
+            self.role = Role.Buyer
+            self.save()
+        else:
+            raise ValueError("Invalid role")
 
     def __str__(self):
-        return self.email
+        return f"{self.email} - {self.role}"
