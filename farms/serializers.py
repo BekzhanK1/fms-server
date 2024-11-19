@@ -4,6 +4,25 @@ from users.serializers import UserSerializer
 from .models import Application, Farm
 
 
+class BriefFarmSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Farm
+        fields = [
+            "id",
+            "name",
+            "address",
+            "geo_loc",
+            "is_verified",
+        ]
+        read_only_fields = [
+            "id",
+            "name",
+            "address",
+            "geo_loc",
+            "is_verified",
+        ]
+
+
 class FarmSerializer(serializers.ModelSerializer):
     farmer = UserSerializer()
 

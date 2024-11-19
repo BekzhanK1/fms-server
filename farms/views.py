@@ -81,7 +81,13 @@ class ApplicationView(APIView):
         serializer = self.serializer_class(applications, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    def put(self, request, pk):
+    def put(self, request, pk=None):
+        if not pk:
+            return Response(
+                {"detail": "Application ID is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         try:
             application = Application.objects.get(pk=pk)
         except Application.DoesNotExist:
@@ -98,6 +104,14 @@ class ApplicationView(APIView):
                 {"detail": "Rejection reason is required when status is 'rejected'."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        if status_value == "approved":
+            application.farm.is_verified = True
+            application.farm.save()
+
+        elif status_value == "rejected":
+            application.farm.is_verified = False
+            application.farm.save()
 
         serializer = self.serializer_class(application, data=data, partial=True)
         if serializer.is_valid():
