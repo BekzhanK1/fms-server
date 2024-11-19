@@ -59,7 +59,49 @@ class ApplicationView(APIView):
     serializer_class = ApplicationSerializer
     permission_classes = [IsAdmin]
 
-    def get(self, request):
-        applications = Application.objects.all()
+    def get(self, request, pk=None):
+        query_params = request.query_params
+        status_filter = query_params.get("status")
+
+        if status_filter in ["pending", "approved", "rejected"]:
+            applications = Application.objects.filter(status=status_filter)
+        elif pk:
+            try:
+                application = Application.objects.get(pk=pk)
+                serializer = self.serializer_class(application)
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            except Application.DoesNotExist:
+                return Response(
+                    {"detail": "Application not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+        else:
+            applications = Application.objects.all()
+
         serializer = self.serializer_class(applications, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request, pk):
+        try:
+            application = Application.objects.get(pk=pk)
+        except Application.DoesNotExist:
+            return Response(
+                {"detail": "Application not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        data = request.data
+        status_value = data.get("status")
+        rejection_reason = data.get("rejection_reason")
+
+        if status_value == "rejected" and not rejection_reason:
+            return Response(
+                {"detail": "Rejection reason is required when status is 'rejected'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.serializer_class(application, data=data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

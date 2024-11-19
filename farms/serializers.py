@@ -25,7 +25,7 @@ class FarmSerializer(serializers.ModelSerializer):
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
-    farm = FarmSerializer()
+    farm = FarmSerializer(read_only=True)
 
     class Meta:
         model = Application
@@ -41,3 +41,14 @@ class ApplicationSerializer(serializers.ModelSerializer):
             "farm",
             "created_at",
         ]
+
+    def validate(self, data):
+        status_value = data.get("status")
+        rejection_reason = data.get("rejection_reason")
+        if status_value == "rejected" and not rejection_reason:
+            raise serializers.ValidationError(
+                {
+                    "rejection_reason": "Rejection reason is required when status is 'rejected'."
+                }
+            )
+        return data

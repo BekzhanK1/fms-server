@@ -8,4 +8,7 @@ router.register(r"farms", FarmViewSet, basename="farm")
 urlpatterns = [
     path("", include(router.urls)),
     path("applications/", ApplicationView.as_view(), name="applications"),
+    path(
+        "applications/<int:pk>/", ApplicationView.as_view(), name="application-detail"
+    ),
 ]
