@@ -30,6 +30,12 @@ class Product(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def decrease_stock(self, quantity):
+        if self.stock_quantity < quantity:
+            raise ValueError("Not enough stock")
+        self.stock_quantity -= quantity
+        self.save()
+
     def __str__(self):
         return f"{self.name} - {self.farm.name} - {self.price}"
 
