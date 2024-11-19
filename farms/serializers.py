@@ -24,7 +24,7 @@ class BriefFarmSerializer(serializers.ModelSerializer):
 
 
 class FarmSerializer(serializers.ModelSerializer):
-    farmer = UserSerializer()
+    farmer = UserSerializer(read_only=True)
 
     class Meta:
         model = Farm

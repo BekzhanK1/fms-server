@@ -1,5 +1,8 @@
 from farms.models import Application, Farm
-from farms.serializers import ApplicationSerializer, FarmSerializer
+from farms.serializers import (
+    ApplicationSerializer,
+    FarmSerializer,
+)
 from users.models import Social, User
 from users.permissions import IsAdmin, IsFarmer, IsFarmerOrReadOnly
 from users.serializers import CustomTokenObtainPairSerializer
@@ -34,7 +37,10 @@ class FarmViewSet(viewsets.ModelViewSet):
         """
         if self.request.user.role != "Farmer":
             raise PermissionDenied("Only farmers can create farms.")
-        serializer.save(farmer=self.request.user)
+        if serializer.is_valid():
+            farm = serializer.save(farmer=self.request.user)
+            return farm
+        raise PermissionDenied("Invalid data.")
 
     def update(self, request, *args, **kwargs):
         """
