@@ -1,11 +1,20 @@
 from farms.models import Application, Farm
 from farms.serializers import ApplicationSerializer, FarmSerializer
-from market.models import Basket, BasketItem, Category, Product
+from market.models import (
+    Basket,
+    BasketItem,
+    Category,
+    Order,
+    OrderItem,
+    OrderStatus,
+    Product,
+)
 from market.serializers import (
     BasketItemCreateSerializer,
     BasketItemSerializer,
     BasketSerializer,
     CategorySerializer,
+    OrderSerializer,
     ProductCreateSerializer,
     ProductSerializer,
 )
@@ -139,7 +148,7 @@ class BasketViewSet(viewsets.ReadOnlyModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-        BasketItem.objects.filter(basket=basket).delete()
+        basket.clear()
         return Response(
             {"detail": "Basket cleared successfully."},
             status=status.HTTP_204_NO_CONTENT,
@@ -227,4 +236,88 @@ class BasketItemViewSet(viewsets.ModelViewSet):
             raise PermissionDenied(
                 "You do not have permission to delete this basket item."
             )
+        return super().destroy(request, *args, **kwargs)
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for managing orders.
+    """
+
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated, IsBuyer]
+
+    def get_queryset(self):
+        """
+        Restrict the queryset to the authenticated user's orders.
+        """
+        return Order.objects.filter(buyer=self.request.user)
+
+    def create(self, request):
+        basket = Basket.objects.filter(buyer=request.user).first()
+        if not basket:
+            return Response(
+                {"detail": "Basket not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not basket.items.exists():
+            return Response(
+                {"detail": "Basket is empty."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        insufficient_stock_items = []
+        for basket_item in basket.items.all():
+            if basket_item.product.stock_quantity < basket_item.quantity:
+                insufficient_stock_items.append(basket_item.product.name)
+
+        if insufficient_stock_items:
+            return Response(
+                {
+                    "detail": f"Insufficient stock for items: {', '.join(insufficient_stock_items)}"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        total_price = basket.total_price
+
+        order = Order.objects.create(
+            buyer=request.user, total_price=total_price, status=OrderStatus.Pending
+        )
+
+        order_items = []
+        for basket_item in basket.items.all():
+            product: Product = basket_item.product
+            order_item = OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=basket_item.quantity,
+                price=product.price,
+            )
+            product.decrease_stock(basket_item.quantity)
+            order_items.append(order_item)
+
+        order.items.set(order_items)
+        order.save()
+        basket.clear()
+        print(f"Order {order.id} created successfully. Total price: {total_price}")
+
+        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Restrict updates to the order owner.
+        """
+        order = self.get_object()
+        if order.buyer != request.user:
+            raise PermissionDenied("You do not have permission to update this order.")
+        return super().update(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Restrict deletion to the order owner.
+        """
+        order = self.get_object()
+        if order.buyer != request.user:
+            raise PermissionDenied("You do not have permission to delete this order.")
         return super().destroy(request, *args, **kwargs)

@@ -56,6 +56,9 @@ class Basket(models.Model):
     def total_price(self):
         return sum(item.total_price for item in self.items.all())
 
+    def clear(self):
+        self.items.all().delete()
+
 
 class BasketItem(models.Model):
     basket = models.ForeignKey(Basket, on_delete=models.CASCADE, related_name="items")
@@ -84,7 +87,7 @@ class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Order {self.id} - Buyer: {self.buyer.email} - Status: {self.status}"
+        return f"Date: {self.created_at} | Order {self.id} - Buyer: {self.buyer.email} - Status: {self.status} - Total: {self.total_price}"
 
 
 class OrderItem(models.Model):

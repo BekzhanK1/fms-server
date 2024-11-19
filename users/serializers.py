@@ -96,6 +96,47 @@ class UserSerializer(serializers.ModelSerializer):
         return representation
 
 
+class BuyerSerializer(serializers.ModelSerializer):
+    info = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "phone",
+            "avatar",
+            "role",
+            "info",
+        ]
+        read_only_fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "phone",
+            "avatar",
+            "role",
+        ]
+
+    def get_avatar(self, obj):
+        request = self.context.get("request")
+        if obj.profile_picture and request:
+            return request.build_absolute_uri(obj.profile_picture.url)
+        return None
+
+    def get_info(self, obj):
+        buyer_info = getattr(obj, "buyer_info", None)
+        if buyer_info:
+            return {
+                "delivery_address": buyer_info.delivery_address,
+                "payment_method": buyer_info.payment_method,
+            }
+        return None
+
+
 class UpdateUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
