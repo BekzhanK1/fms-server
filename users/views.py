@@ -63,6 +63,18 @@ class ProfileView(APIView):
     def put(self, request):
         try:
             user: User = request.user
+            delivery_address = request.data.get("delivery_address")
+            payment_method = request.data.get("payment_method")
+            if delivery_address and payment_method:
+                buyer_info = user.buyer_info
+                buyer_info.payment_method = payment_method
+                buyer_info.delivery_address = delivery_address
+                buyer_info.save()
+            else:
+                return Response(
+                    {"error": "Both delivery_address and payment_method are required."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             serializer = UpdateUserSerializer(user, data=request.data, partial=True)
             if serializer.is_valid():
                 serializer.save()
