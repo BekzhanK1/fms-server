@@ -8,11 +8,13 @@ from .views import (
     RegistrationView,
     SwitchRoleView,
     SocialsViewSet,
+    UserViewSet,
 )
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
 router.register(r"socials", SocialsViewSet, basename="socials")
+router.register(r"users", UserViewSet, basename="users")
 
 urlpatterns = [
     path("token/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),

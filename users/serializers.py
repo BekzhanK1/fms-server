@@ -34,6 +34,24 @@ class RegistrationSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
 
+class AdminUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "phone",
+            "avatar",
+            "role",
+            "is_active",
+        ]
+        read_only_fields = [
+            "id",
+        ]
+
+
 class UserSerializer(serializers.ModelSerializer):
     info = serializers.SerializerMethodField()
     socials = serializers.SerializerMethodField()

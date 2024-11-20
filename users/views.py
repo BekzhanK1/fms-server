@@ -3,7 +3,7 @@ from rest_framework_simplejwt.views import (
     TokenObtainPairView,
 )
 from users.models import Social, User
-from users.permissions import IsFarmer
+from users.permissions import IsAdmin, IsFarmer
 from users.serializers import CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
 from rest_framework import status
@@ -14,6 +14,7 @@ from rest_framework.exceptions import PermissionDenied
 
 from users.service import create_if_not_exists
 from .serializers import (
+    AdminUserSerializer,
     RegistrationSerializer,
     SocialSerializer,
     UpdateUserSerializer,
@@ -23,6 +24,15 @@ from .serializers import (
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsAdmin]
+
+    def get_queryset(self):
+        return User.objects.all()
 
 
 class RegistrationView(APIView):

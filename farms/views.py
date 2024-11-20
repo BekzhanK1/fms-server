@@ -3,6 +3,7 @@ from farms.serializers import (
     ApplicationSerializer,
     FarmSerializer,
 )
+from django.db.models import Q
 from users.models import Social, User
 from users.permissions import IsAdmin, IsFarmer, IsFarmerOrReadOnly
 from users.serializers import CustomTokenObtainPairSerializer
@@ -29,6 +30,9 @@ class FarmViewSet(viewsets.ModelViewSet):
         - Farmers see their own farms.
         - Others can view all farms.
         """
+        user = self.request.user
+        if user.role == "Farmer":
+            return Farm.objects.filter(Q(is_verified=True) | Q(farmer=user))
         return Farm.objects.filter(is_verified=True)
 
     def perform_create(self, serializer):

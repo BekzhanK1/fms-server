@@ -25,6 +25,7 @@ class BriefFarmSerializer(serializers.ModelSerializer):
 
 class FarmSerializer(serializers.ModelSerializer):
     farmer = UserSerializer(read_only=True)
+    is_owner = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Farm
@@ -39,8 +40,15 @@ class FarmSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
             "farmer",
+            "is_owner",
         ]
         read_only_fields = ["id", "is_verified", "created_at", "updated_at", "farmer"]
+
+    def get_is_owner(self, obj):
+        request = self.context.get("request")
+        if request:
+            return obj.farmer == request.user
+        return False
 
 
 class ApplicationSerializer(serializers.ModelSerializer):
