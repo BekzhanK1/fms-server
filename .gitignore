@@ -20,9 +20,6 @@ db.sqlite3-journal
 # Static files
 /static
 
-# Django migrations
-*/migrations/*
-
 # VS Code
 .vscode/
 
