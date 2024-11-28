@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+from farms.utils import calculate_distance
 from users.serializers import UserSerializer
 from .models import Application, Farm
 
@@ -11,14 +12,12 @@ class BriefFarmSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "address",
-            "geo_loc",
             "is_verified",
         ]
         read_only_fields = [
             "id",
             "name",
             "address",
-            "geo_loc",
             "is_verified",
         ]
 
@@ -26,6 +25,7 @@ class BriefFarmSerializer(serializers.ModelSerializer):
 class FarmSerializer(serializers.ModelSerializer):
     farmer = UserSerializer(read_only=True)
     is_owner = serializers.SerializerMethodField(read_only=True)
+    distance = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Farm
@@ -33,10 +33,12 @@ class FarmSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "address",
-            "geo_loc",
             "size",
             "crop_types",
             "is_verified",
+            "latitude",
+            "longitude",
+            "distance",
             "created_at",
             "updated_at",
             "farmer",
@@ -49,6 +51,26 @@ class FarmSerializer(serializers.ModelSerializer):
         if request:
             return obj.farmer == request.user
         return False
+
+    def get_distance(self, obj):
+        request = self.context.get("request")
+        if not obj.latitude or not obj.longitude:
+            return None
+
+        farm_location = (obj.latitude, obj.longitude)
+
+        if request:
+            latitude = request.query_params.get("latitude")
+            longitude = request.query_params.get("longitude")
+
+            if latitude and longitude:
+                try:
+                    user_location = (float(latitude), float(longitude))
+                    return round(calculate_distance(user_location, farm_location), 2)
+                except ValueError:
+                    return None
+
+        return None
 
 
 class ApplicationSerializer(serializers.ModelSerializer):

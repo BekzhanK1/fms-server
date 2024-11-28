@@ -49,6 +49,22 @@ class ProductSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
+class FarmProductSerializer(serializers.ModelSerializer):
+    category = CategorySerializer(read_only=True)
+
+    class Meta:
+        model = Product
+        fields = [
+            "id",
+            "category",
+            "name",
+            "description",
+            "price",
+            "stock_quantity",
+        ]
+        read_only_fields = ["id"]
+
+
 class BasketItemSerializer(serializers.ModelSerializer):
     product = ProductSerializer()
 

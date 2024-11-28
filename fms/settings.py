@@ -14,6 +14,8 @@ from pathlib import Path
 from datetime import timedelta
 import os
 
+from farms.utils import calculate_distance
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -30,7 +32,6 @@ DEBUG = True
 ALLOWED_HOSTS = ["*"]
 # Allow all origins
 CORS_ALLOW_ALL_ORIGINS = True
-
 
 
 # Application definition

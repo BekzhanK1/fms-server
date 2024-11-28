@@ -13,6 +13,8 @@ from rest_framework.response import Response
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.decorators import action
+from market.serializers import FarmProductSerializer
 
 
 class FarmViewSet(viewsets.ModelViewSet):
@@ -63,6 +65,28 @@ class FarmViewSet(viewsets.ModelViewSet):
         if farm.farmer != request.user:
             raise PermissionDenied("You do not have permission to delete this farm.")
         return super().destroy(request, *args, **kwargs)
+
+    @action(detail=False, methods=["get"], url_path="my-farms")
+    def my_farms(self, request, pk=None):
+        """
+        Retrieve the farms of the authenticated farmer.
+        """
+        user = request.user
+        if user.role != "Farmer":
+            raise PermissionDenied("Only farmers can view their farms.")
+        farms = Farm.objects.filter(farmer=user)
+        serializer = self.serializer_class(farms, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=["get"], url_path="products")
+    def products(self, request, pk=None):
+        """
+        Retrieve the products of a farm.
+        """
+        farm = self.get_object()
+        products = farm.products.all()
+        serializer = FarmProductSerializer(products, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class ApplicationView(APIView):
