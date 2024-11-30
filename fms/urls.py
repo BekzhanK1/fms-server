@@ -39,4 +39,5 @@ urlpatterns = [
     path("api/v1/", include("users.urls")),
     path("api/v1/", include("farms.urls")),
     path("api/v1/", include("market.urls")),
+    path("api/v1/chat/", include("chat.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

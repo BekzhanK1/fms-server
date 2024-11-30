@@ -20,6 +20,7 @@ class Farm(models.Model):
     )
     name = models.CharField(max_length=255)
     address = models.TextField()
+    image = models.ImageField(upload_to="farms", blank=True, null=True)
     longitude = models.FloatField(blank=True, null=True)
     latitude = models.FloatField(blank=True, null=True)
     size = models.CharField(max_length=50)

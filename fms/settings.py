@@ -43,11 +43,13 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "channels",
     "rest_framework",
     "drf_spectacular",
     "users",
     "farms",
     "market",
+    "chat",
     "corsheaders",
 ]
 
@@ -104,6 +106,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "fms.wsgi.application"
+ASGI_APPLICATION = "fms.asgi.application"
 
 
 # Database
@@ -113,7 +116,26 @@ DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
         "NAME": BASE_DIR / "db.sqlite3",
-    }
+    },
+    # "chat": {
+    #     "ENGINE": "djongo",
+    #     "NAME": "chat_messages",  # MongoDB database name
+    #     "CLIENT": {
+    #         "host": "mongodb://mongo:27017",  # MongoDB connection URI
+    #     },
+    # },
+}
+
+# DATABASE_ROUTERS = ["chat.db_router.ChatDatabaseRouter"]
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)],
+        },
+    },
 }
 
 
