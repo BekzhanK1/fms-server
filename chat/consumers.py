@@ -34,7 +34,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return
 
         # Debug: Log user joining the room
-        print(f"User {self.scope['user'].email} is joining room {self.room_group_name}")
+        print(f"User {self.scope['user'].email} is joining room { self.room_group_name}")
 
         # Add the client to the room group
         await self.channel_layer.group_add(
@@ -47,9 +47,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         # Debug: Log user disconnecting
-        print(
-            f"User {self.scope['user'].email} is disconnecting from {self.room_group_name}"
-        )
+        print( f"User {self.scope['user'].email} is disconnecting from { self.room_group_name}" )
 
         # Remove the client from the room group
         await self.channel_layer.group_discard(
@@ -64,6 +62,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
         # Debug: Log received message
         print(f"Received message from {sender.email}: {message}")
+
 
         # Broadcast the message to the group
         await self.channel_layer.group_send(
@@ -82,20 +81,18 @@ class ChatConsumer(AsyncWebsocketConsumer):
         # Debug: Log the sender and receiver
         print(f"Sender: {sender}")
         print(f"Current User (receiver): {self.scope['user'].email}")
+        await self.save_message(self.room_name, sender, message)
 
         # Send the message to the WebSocket client only if the current user is NOT the sender
-        if self.scope["user"].email != sender:
-            print(f"Sending message to: {self.scope['user'].email}")
-            await self.send(
-                text_data=json.dumps(
-                    {
-                        "message": message,
-                        "sender": sender,
-                    }
-                )
+        print(f"Sending message to: {self.scope['user'].email}")
+        await self.send(
+            text_data=json.dumps(
+                {
+                    "message": message,
+                    "sender": sender,
+                }
             )
-        else:
-            print(f"Not sending message to sender: {self.scope['user'].email}")
+        )
 
     @database_sync_to_async
     def get_user_from_token(self):
@@ -148,3 +145,23 @@ class ChatConsumer(AsyncWebsocketConsumer):
             return True
         except (ValueError, TypeError):
             return False
+    
+    @database_sync_to_async
+    def save_message(self, room_name, sender_email, message_content):
+        try:
+            # Find the Room by room_name
+            room = Room.objects.get(name=room_name)
+            
+            # Find the User by sender_email
+            sender = User.objects.get(email=sender_email)
+
+            # Save the message
+            Message.objects.create(
+                room=room,
+                sender_id=sender.pk,
+                message=message_content,
+            )
+        except Room.DoesNotExist:
+            print(f"Room with name {room_name} does not exist.")
+        except User.DoesNotExist:
+            print(f"User with email {sender_email} does not exist.")

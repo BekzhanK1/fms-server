@@ -105,7 +105,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "fms.wsgi.application"
 ASGI_APPLICATION = "fms.asgi.application"
 
 
