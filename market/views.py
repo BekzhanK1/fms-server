@@ -1,3 +1,4 @@
+from collections import defaultdict
 from farms.models import Application, Farm
 from farms.serializers import ApplicationSerializer, FarmSerializer
 from market.models import (
@@ -29,6 +30,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
+from django.db import transaction
 
 
 class CategoryViewSet(viewsets.ModelViewSet):
@@ -325,10 +327,16 @@ class OrderViewSet(viewsets.ModelViewSet):
                 {"detail": "Basket is empty."}, status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Group basket items by farm
+        farm_items = defaultdict(list)
         insufficient_stock_items = []
+
         for basket_item in basket.items.all():
-            if basket_item.product.stock_quantity < basket_item.quantity:
-                insufficient_stock_items.append(basket_item.product.name)
+            product: Product = basket_item.product
+            if product.stock_quantity < basket_item.quantity:
+                insufficient_stock_items.append(product.name)
+            else:
+                farm_items[product.farm].append(basket_item)
 
         if insufficient_stock_items:
             return Response(
@@ -338,30 +346,46 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        total_price = basket.total_price
+        created_orders = []
 
-        order = Order.objects.create(
-            buyer=request.user, total_price=total_price, status=OrderStatus.Pending
-        )
+        # Use a transaction to ensure atomicity
+        with transaction.atomic():
+            for farm, items in farm_items.items():
+                # Calculate the total price for the order
+                total_price = sum(item.quantity * item.product.price for item in items)
 
-        order_items = []
-        for basket_item in basket.items.all():
-            product: Product = basket_item.product
-            order_item = OrderItem.objects.create(
-                order=order,
-                product=product,
-                quantity=basket_item.quantity,
-                price=product.price,
-            )
-            product.decrease_stock(basket_item.quantity)
-            order_items.append(order_item)
+                # Create the order
+                order = Order.objects.create(
+                    buyer=request.user,
+                    total_price=total_price,
+                    status=OrderStatus.Pending,
+                )
 
-        order.items.set(order_items)
-        order.save()
+                # Add items to the order
+                order_items = []
+                for basket_item in items:
+                    product: Product = basket_item.product
+                    order_item = OrderItem.objects.create(
+                        order=order,
+                        product=product,
+                        quantity=basket_item.quantity,
+                        price=product.price,
+                    )
+                    product.decrease_stock(basket_item.quantity)
+                    order_items.append(order_item)
+
+                order.items.set(order_items)
+                order.save()
+
+                created_orders.append(order)
+
+        # Clear the basket after creating all orders
         basket.clear()
-        print(f"Order {order.id} created successfully. Total price: {total_price}")
 
-        return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
+        return Response(
+            {"orders": OrderSerializer(created_orders, many=True).data},
+            status=status.HTTP_201_CREATED,
+        )
 
     def update(self, request, *args, **kwargs):
         """
