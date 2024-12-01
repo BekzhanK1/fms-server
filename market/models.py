@@ -81,6 +81,9 @@ class Order(models.Model):
         related_name="orders",
         limit_choices_to={"role": "Buyer"},
     )
+    farm = models.ForeignKey(
+        Farm, on_delete=models.CASCADE, related_name="orders", null=True, blank=True
+    )
     total_price = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(
         max_length=10, choices=OrderStatus.choices, default=OrderStatus.Pending

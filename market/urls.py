@@ -6,6 +6,7 @@ from .views import (
     CategoryViewSet,
     OrderViewSet,
     ProductViewSet,
+    FarmerOrderViewSet,
 )
 
 router = DefaultRouter()
@@ -14,6 +15,7 @@ router.register(r"basket-items", BasketItemViewSet, basename="basket-item")
 router.register(r"basket", BasketViewSet, basename="basket")
 router.register(r"categories", CategoryViewSet, basename="category")
 router.register(r"products", ProductViewSet, basename="product")
+router.register(r"farmer-orders", FarmerOrderViewSet, basename="farmer-order")
 
 urlpatterns = [
     path("", include(router.urls)),

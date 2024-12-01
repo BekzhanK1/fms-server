@@ -112,11 +112,12 @@ class OrderSerializer(serializers.ModelSerializer):
     items = serializers.SerializerMethodField()
     total_price = serializers.SerializerMethodField()
     buyer = BuyerSerializer(read_only=True)
+    farm = BriefFarmSerializer(read_only=True)
 
     class Meta:
         model = Order
-        fields = ["id", "buyer", "items", "status", "total_price", "created_at"]
-        read_only_fields = ["id", "buyer", "created_at", "status"]
+        fields = ["id", "buyer", "items", "status", "total_price", "created_at", "farm"]
+        read_only_fields = ["id", "buyer", "created_at", "status", "farm"]
 
     def get_items(self, obj):
         return OrderItemSerializer(obj.items.all(), many=True).data

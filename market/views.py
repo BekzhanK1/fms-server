@@ -354,9 +354,10 @@ class OrderViewSet(viewsets.ModelViewSet):
                 # Calculate the total price for the order
                 total_price = sum(item.quantity * item.product.price for item in items)
 
-                # Create the order
+                # Create the order with the associated farm
                 order = Order.objects.create(
                     buyer=request.user,
+                    farm=farm,  # Associate the order with the farm
                     total_price=total_price,
                     status=OrderStatus.Pending,
                 )
@@ -404,3 +405,40 @@ class OrderViewSet(viewsets.ModelViewSet):
         if order.buyer != request.user:
             raise PermissionDenied("You do not have permission to delete this order.")
         return super().destroy(request, *args, **kwargs)
+
+
+class FarmerOrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated, IsFarmer]
+
+    def get_queryset(self):
+        return Order.objects.filter(farm__farmer=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        """
+        Allow only the status of the order to be updated and restrict updates to the farmer associated with the farm.
+        """
+        order = self.get_object()
+
+        # Ensure only the farmer of the associated farm can update the order
+        if order.farm.farmer != request.user:
+            raise PermissionDenied("You do not have permission to update this order.")
+
+        # Validate the request to ensure only `status` is being updated
+        if "status" not in request.data or len(request.data) != 1:
+            raise ValidationError({"detail": "Only the status field can be updated."})
+
+        # Validate that the status value is a valid choice
+        new_status = request.data.get("status")
+        if new_status not in OrderStatus.values:
+            raise ValidationError({"detail": f"Invalid status: {new_status}"})
+
+        # Update the status
+        order.status = new_status
+        order.save()
+
+        return Response(
+            {"detail": "Order status updated successfully.", "status": order.status},
+            status=status.HTTP_200_OK,
+        )
