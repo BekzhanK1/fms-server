@@ -115,8 +115,8 @@ class OrderSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Order
-        fields = ["id", "buyer", "items", "total_price", "created_at"]
-        read_only_fields = ["id", "buyer", "created_at"]
+        fields = ["id", "buyer", "items", "status", "total_price", "created_at"]
+        read_only_fields = ["id", "buyer", "created_at", "status"]
 
     def get_items(self, obj):
         return OrderItemSerializer(obj.items.all(), many=True).data

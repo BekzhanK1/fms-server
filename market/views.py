@@ -130,6 +130,16 @@ class BasketViewSet(viewsets.ReadOnlyModelViewSet):
         """
         return Basket.objects.filter(buyer=self.request.user)
 
+    def list(self, request):
+        basket = self.get_queryset().first()
+        if not basket:
+            return Response(
+                {"detail": "Basket not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(BasketSerializer(basket).data, status=status.HTTP_200_OK)
+
     def destroy(self, request, *args, **kwargs):
         """
         Disable the ability to delete the basket.
@@ -226,6 +236,55 @@ class BasketItemViewSet(viewsets.ModelViewSet):
         return Response(
             BasketItemSerializer(basket_item).data, status=status.HTTP_200_OK
         )
+
+    def patch(self, request, *args, **kwargs):
+        updates = request.data.get("updates", [])
+        if not updates or not isinstance(updates, list):
+            return Response(
+                {"detail": "Invalid request. Provide a list of updates."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        updated_items = []
+        for update in updates:
+            basket_item_id = update.get("id")
+            new_quantity = update.get("quantity")
+
+            if not basket_item_id or new_quantity is None:
+                return Response(
+                    {"detail": "Each update must include 'id' and 'quantity'."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            try:
+                basket_item = BasketItem.objects.get(id=basket_item_id)
+            except BasketItem.DoesNotExist:
+                return Response(
+                    {"detail": f"Basket item with ID {basket_item_id} not found."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
+            if basket_item.basket.buyer != request.user:
+                raise PermissionDenied(
+                    f"You do not have permission to update basket item with ID {basket_item_id}."
+                )
+
+            product = basket_item.product
+            if product.stock_quantity < new_quantity:
+                return Response(
+                    {
+                        "detail": f"Not enough stock available for product {product.name}."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # Update the basket item
+            basket_item.quantity = new_quantity
+            basket_item.save()
+            updated_items.append(basket_item)
+
+        serialized_items = BasketItemSerializer(updated_items, many=True)
+        return Response(serialized_items.data, status=status.HTTP_200_OK)
 
     def destroy(self, request, *args, **kwargs):
         """
