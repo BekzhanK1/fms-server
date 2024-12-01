@@ -6,20 +6,32 @@ from .models import Application, Farm
 
 
 class BriefFarmSerializer(serializers.ModelSerializer):
+    distance = serializers.SerializerMethodField(read_only=True)
+
     class Meta:
         model = Farm
-        fields = [
-            "id",
-            "name",
-            "address",
-            "is_verified",
-        ]
-        read_only_fields = [
-            "id",
-            "name",
-            "address",
-            "is_verified",
-        ]
+        fields = ["id", "name", "address", "is_verified", "distance"]
+        read_only_fields = ["id", "name", "address", "is_verified", "distance"]
+
+    def get_distance(self, obj):
+        request = self.context.get("request")
+        if not obj.latitude or not obj.longitude:
+            return None
+
+        farm_location = (obj.latitude, obj.longitude)
+
+        if request:
+            latitude = request.query_params.get("latitude")
+            longitude = request.query_params.get("longitude")
+
+            if latitude and longitude:
+                try:
+                    user_location = (float(latitude), float(longitude))
+                    return round(calculate_distance(user_location, farm_location), 2)
+                except ValueError:
+                    return None
+
+        return None
 
 
 class FarmSerializer(serializers.ModelSerializer):

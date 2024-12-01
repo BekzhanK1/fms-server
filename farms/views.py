@@ -5,7 +5,7 @@ from farms.serializers import (
 )
 from django.db.models import Q
 from users.models import Social, User
-from users.permissions import IsAdmin, IsFarmer, IsFarmerOrReadOnly
+from users.permissions import IsAdmin, IsFarmer
 from users.serializers import CustomTokenObtainPairSerializer
 from rest_framework.views import APIView
 from rest_framework import status
@@ -24,7 +24,7 @@ class FarmViewSet(viewsets.ModelViewSet):
 
     queryset = Farm.objects.all()
     serializer_class = FarmSerializer
-    permission_classes = [IsAuthenticated, IsFarmerOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         """
@@ -75,7 +75,9 @@ class FarmViewSet(viewsets.ModelViewSet):
         if user.role != "Farmer":
             raise PermissionDenied("Only farmers can view their farms.")
         farms = Farm.objects.filter(farmer=user)
-        serializer = self.serializer_class(farms, many=True)
+        serializer = self.serializer_class(
+            farms, many=True, context={"request": request}
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=["get"], url_path="products")

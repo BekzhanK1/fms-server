@@ -20,7 +20,7 @@ from market.serializers import (
     ProductSerializer,
 )
 from users.models import Social, User
-from users.permissions import IsAdmin, IsBuyer, IsFarmer, IsFarmerOrReadOnly
+from users.permissions import IsAdmin, IsBuyer, IsFarmer
 from users.serializers import CustomTokenObtainPairSerializer
 from users.choices import Role
 from rest_framework.views import APIView
@@ -69,7 +69,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
-    permission_classes = [IsAuthenticated, IsFarmerOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
         return Product.objects.filter(farm__is_verified=True)
@@ -101,6 +101,9 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         if farm.farmer != request.user:
             raise PermissionDenied("You do not have permission to update this product.")
+        category = Category.objects.get(id=request.data.get("category"))
+        product.category = category
+        product.save()
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):

@@ -82,7 +82,7 @@ class BuyerInfo(models.Model):
 
 
 class Social(models.Model):
-    farmer = models.ForeignKey(User, on_delete=models.CASCADE)
+    farmer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="socials")
     platform = models.CharField(max_length=50, choices=SocialType.choices)
     url = models.URLField()
 
