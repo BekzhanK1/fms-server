@@ -8,7 +8,9 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "fms.settings")
 
 application = ProtocolTypeRouter(
     {
-        "http": get_asgi_application(),
-        "websocket": AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
+        "http": get_asgi_application(),  # Handles HTTP traffic
+        "websocket": AuthMiddlewareStack(
+            URLRouter(websocket_urlpatterns)  # Routes WebSocket traffic
+        ),
     }
 )

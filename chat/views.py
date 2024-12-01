@@ -13,6 +13,7 @@ class ListChatRoomsView(APIView):
 
     def get(self, request):
         user = request.user
+
         # Get rooms where the user is either user1 or user2
         rooms = Room.objects.filter(user1_id=user.id)
         rooms2 = Room.objects.filter(user2_id=user.id)
@@ -20,10 +21,25 @@ class ListChatRoomsView(APIView):
 
         response = []
         for room in rooms:
-            # Get the last message in the room
+            # Get the last message in the room, or set last_message to None if it doesn't exist
             last_message = (
                 Message.objects.filter(room=room).order_by("-timestamp").first()
             )
+
+            # If no message exists, set default values
+            last_message_exists = last_message is not None
+            if not last_message_exists:
+                last_message_data = {
+                    "who": "companion",  # Default to "companion" if no message exists
+                    "message": "No messages yet.",
+                    "timestamp": None,
+                }
+            else:
+                last_message_data = {
+                    "who": "me" if last_message.sender_id == user.id else "companion",
+                    "message": last_message.message,
+                    "timestamp": last_message.timestamp,
+                }
 
             # Determine the companion's ID
             companion_id = room.user2_id if room.user1_id == user.id else room.user1_id
@@ -38,13 +54,7 @@ class ListChatRoomsView(APIView):
                         "full_name": f"{companion.first_name} {companion.last_name}",
                         "email": companion.email,
                     },
-                    "last_message": {
-                        "who": (
-                            "me" if last_message.sender_id == user.id else "companion"
-                        ),
-                        "message": last_message.message,
-                        "timestamp": last_message.timestamp,
-                    },
+                    "last_message": last_message_data,
                 }
             )
 
